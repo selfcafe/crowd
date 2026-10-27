@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>店内の混雑状況｜セルフカフェ</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@500;600&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--g:#22703d;--g2:#30693e;--lime:#92af0c;--gold:#b7b071;--ink:#101010;--sub:#393939;--muted:#6b6b6b;--line:rgba(34,112,61,.28);--bg:#f7f6f1;--card:#fff;
+  --lv0:#2e8b57;--lv1:#7fae1f;--lv2:#e0a000;--lv3:#e06a1b;--lv4:#c8322d;--off:#9a9a9a}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans JP","Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans",YuGothic,"Yu Gothic",Meiryo,sans-serif;
+  line-height:1.6;letter-spacing:.02em;-webkit-text-size-adjust:100%}
+body.in-frame{background:transparent}
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px 28px}
+.head h1{margin:0;font-size:clamp(1.1875rem,1.05rem + .5vw,1.5rem);font-weight:900;line-height:1.4;display:flex;align-items:center;gap:10px;
+  padding-bottom:10px;border-bottom:2px dashed var(--g)}
+.head h1 img{width:44px;height:44px;flex:none}
+.lead{margin:8px 0 0;color:var(--sub);font-size:14px}
+.demo{margin:12px 0 0;padding:8px 12px;border-radius:8px;background:#fff6d6;border:1px solid #e8d28a;color:#6b5400;font-size:13px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0 12px;font-size:13px;color:var(--muted)}
+.btn{appearance:none;border:0;border-bottom:3px solid var(--gold);border-radius:7px;background:var(--g);color:#fff;font:inherit;font-weight:700;font-size:13px;
+  padding:7px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap;flex:none}
+.btn:hover{border-bottom-width:1px;transform:translateY(2px)}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.sub{background:#fff;color:var(--g);border:1px solid var(--g);border-bottom:3px solid var(--gold)}
+.sec{margin:20px 0 0}
+.sec h2{margin:0 0 10px;font-size:17px;font-weight:900;color:var(--g2);display:flex;align-items:center;gap:6px}
+.sec h2::before{content:"";width:5px;height:1.1em;border-radius:3px;background:var(--lime)}
+.near{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.near-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.near form{display:flex;gap:6px;flex:1;min-width:min(100%,260px)}
+.near input{flex:1;min-width:0;font:inherit;font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#fff}
+.near input:focus{outline:2px solid var(--lime);outline-offset:0;border-color:var(--g)}
+.near-msg{margin:0;font-size:13px;color:var(--muted)}
+.near-msg:empty{display:none}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:12px;margin:0;padding:0;list-style:none}
+.list:empty{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 16px 14px;display:grid;gap:10px}
+.name{margin:0;font-size:17px;font-weight:700;color:var(--g2);display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.name small{font-size:12px;font-weight:400;color:var(--muted)}
+.name .dist{margin-left:auto;font-family:"Jost","Noto Sans JP",sans-serif;font-size:13px;font-weight:600;color:var(--sub)}
+.lv{display:flex;align-items:center;gap:10px}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:7.5em;padding:6px 14px;border-radius:999px;color:#fff;font-weight:900;font-size:18px;line-height:1.3}
+.gauge{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;min-width:0}
+.gauge i{display:block;height:10px;border-radius:3px;background:#e6e4dc}
+.when{margin:0;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.when b{font-family:"Jost","Noto Sans JP",sans-serif;font-weight:600;color:var(--sub);font-size:14px}
+.when a{color:var(--g);font-weight:700;text-decoration:none;border-bottom:1px solid var(--gold)}
+.card.off .badge,.card.stale .badge,.card.none .badge{background:var(--off);font-size:15px}
+.card.none .badge{background:#c9c7bf}
+.msg{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--sub);font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:16px 0 0;padding:0;list-style:none;font-size:12px;color:var(--sub)}
+.legend li{display:flex;align-items:center;gap:5px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.notes{margin:14px 0 0;padding:12px 14px;border-top:2px dashed var(--line);font-size:12px;color:var(--muted);display:grid;gap:4px}
+.notes p{margin:0}
+@media (max-width:420px){.badge{min-width:6.5em;font-size:16px;padding:6px 10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head" data-k="head">
+    <h1><img src="logo.png" alt="セルフカフェ">店内の混雑状況（目安）</h1>
+    <p class="lead">店内カメラの映像から、席の埋まり具合を15分ごとに自動で判定しています。ご来店の目安にお使いください。</p>
+  </header>
+  <p class="demo" data-k="demo" hidden>見本のデータで表示しています（実際の混み具合ではありません）。</p>
+  <section class="sec" aria-labelledby="near-h">
+    <h2 id="near-h">近くの店の混み具合</h2>
+    <div class="near">
+      <div class="near-row">
+        <button type="button" class="btn" data-k="geo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>現在地から探す</button>
+        <form data-k="find" role="search"><input type="search" data-k="q" placeholder="店名・地名（例：名駅、中村区、梅田）" aria-label="店名・地名で探す" enterkeyhint="search"><button type="submit" class="btn sub">探す</button></form>
+      </div>
+      <p class="near-msg" data-k="nearmsg" aria-live="polite"></p>
+    </div>
+    <ul class="list" data-k="near" aria-live="polite" style="margin-top:12px"></ul>
+  </section>
+  <section class="sec" aria-labelledby="all-h">
+    <h2 id="all-h">混み具合を表示している店</h2>
+    <div class="bar"><span data-k="stamp">読み込み中…</span><button type="button" class="btn" data-k="reload"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>最新にする</button></div>
+    <ul class="list" data-k="list" aria-live="polite"></ul>
+  </section>
+  <ul class="legend" data-k="legend" aria-label="段階の見かた"></ul>
+  <div class="notes">
+    <p>※カメラ映像をもとにした目安です。実際の混み具合と異なる場合があります。</p>
+    <p>※映像は判定にだけ使い、保存・公開はしていません。現在地は近い店を探すためだけに使い、送信・保存はしていません。</p>
+    <p>※判定の時間外や、判定が止まっているときは、混み具合を表示しません。</p>
+  </div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var API = "";
+  var REFRESH_MS = 2 * 60 * 1000;
+  var STALE_MIN = 60;
+  var NEAR_N = 5;
+  var LEVELS = ["空いています", "やや空いています", "やや混雑", "混雑", "ほぼ満席"];
+  var COLORS = ["var(--lv0)", "var(--lv1)", "var(--lv2)", "var(--lv3)", "var(--lv4)"];
+  var STORES = [["木曽岬",35.075695,136.73085,"https://selfcafe.jp/shop/mie/kisomisaki/","三重県桑名郡木曽岬町大字西対海地２５１木曽岬町役場内１階"],["フィールズ南柏",35.844086,139.955124,"https://selfcafe.jp/shop/chiba/fields-minamikashiwa/","千葉県柏市南柏中央６－７フィールズ南柏モールⅡ３階"],["印西牧の原",35.803074,140.164886,"https://selfcafe.jp/shop/chiba/inzaimakinohara/","千葉県印西市原１－２ＢＩＧＨＯＰガーデンモール印西１階"],["カインズ上里本庄",36.258087,139.15477,"https://selfcafe.jp/shop/saitama/cainzkamisatohonjo/","埼玉県児玉郡上里町大字神保原町字北稲塚１８４５"],["あべの南",34.622288,135.509109,"https://selfcafe.jp/shop/osaka/abenominami/","大阪府大阪市阿倍野区播磨町１－２１－１３ＤＭビル１階"],["イオンタウン東大阪",34.693275,135.618057,"https://selfcafe.jp/shop/osaka/aeontownhigashiosaka/","大阪府東大阪市東鴻池町１－６－３０"],["上新庄",34.749062,135.533859,"https://selfcafe.jp/shop/osaka/kamishinjo/","大阪府大阪市東淀川区瑞光１－１２－１２至誠ビル１０２"],["京橋北",34.702007,135.535294,"https://selfcafe.jp/shop/osaka/kyoubashikita/","大阪府大阪市都島区東野田町５－１５－５大野マンション１階"],["南森町",34.698376,135.513626,"https://selfcafe.jp/shop/osaka/minamimorimati/","大阪府大阪市北区東天満２－１０－３１第９田渕ビル１階"],["喜志",34.521835,135.593506,"https://selfcafe.jp/shop/osaka/kishi/","大阪府富田林市喜志５－３－３７メゾン・ド・ＭＩＹＡＶＩ１０１号室"],["大阪平野西",34.61924,135.546906,"https://selfcafe.jp/shop/osaka/osakahiranonishi/","大阪府大阪市平野区平野西５－７－２Ｆｅｒｉｏ１階"],["天満",34.702076,135.511459,"https://selfcafe.jp/shop/osaka/tenma/","大阪府大阪市北区天神橋３－８－２３コア扇町２階"],["天満橋北",34.689968,135.520569,"https://selfcafe.jp/shop/osaka/tenmabashikita/","大阪府大阪市中央区大手前１－３－４９ドーンセンター１階"],["太子橋",34.732952,135.557343,"https://selfcafe.jp/shop/osaka/taishibashi/","大阪府守口市京阪本通１－２－１０京阪キクマビル１０１号室"],["守口駅前",34.738842,135.564102,"https://selfcafe.jp/shop/osaka/moriguchiekimae/","大阪府守口市京阪本通２－１６－８メゾンレクト１０２"],["心斎橋東急ビル",34.675686,135.500076,"https://selfcafe.jp/shop/osaka/shinsaibashitokyuubiru/","大阪府大阪市中央区南船場４－４－３心斎橋東急ビルＢ１階"],["東大阪小若江",34.648731,135.583664,"https://selfcafe.jp/shop/osaka/kowakae/","大阪府東大阪市小若江２－９－３３アバハイム西村"],["梅田センタービル",34.705372,135.501572,"https://selfcafe.jp/shop/osaka/umedacenterbldg/","大阪府大阪市北区中崎西２－４－１２梅田センタービル地下１階"],["相川駅前",34.758106,135.534393,"https://selfcafe.jp/shop/osaka/aikawaekimae/","大阪府大阪市東淀川区相川２－２０－８上本第二ビル１階"],["蒲生四丁目",34.699749,135.546432,"https://selfcafe.jp/shop/osaka/gamoyonchome/","大阪府大阪市城東区今福西１－７－２蒲生四丁目駅前ビル２階"],["谷町九丁目",34.668152,135.515823,"https://selfcafe.jp/shop/osaka/tanimachi9choume/","大阪府大阪市中央区谷町９－５－１６バロンヴェールビル１０１"],["鶴見横堤",34.703575,135.573547,"https://selfcafe.jp/shop/osaka/tsurumiyokozutsumi/","大阪府大阪市鶴見区横堤３－１０－１９堤之ビル２階"],["大阪駅前第４ビル",34.699581,135.499298,"https://selfcafe.jp/shop/osaka/osaka-ekimae4-building/","大阪府大阪市北区梅田１－１１－４大阪駅前第４ビル１階４０号"],["イオンタウン大垣",35.365883,136.629562,"https://selfcafe.jp/shop/gifu/aeontown-ogaki/","岐阜県大垣市三塚町丹瀬４６３－１イオンタウン大垣内"],["イオンタウン岐阜北方",35.429836,136.697495,"https://selfcafe.jp/shop/gifu/aeontowngifukitagata/","岐阜県本巣郡北方町曲路東３－３－１イオンタウン岐阜北方内"],["盛岡大通",39.703125,141.146729,"https://selfcafe.jp/shop/iwate/moriokaoodori/","岩手県盛岡市大通２－３－４"],["盛岡駅前",39.703175,141.136002,"https://selfcafe.jp/shop/iwate/moriokaekimae/","岩手県盛岡市盛岡駅前通１５－１６ＳＳビル盛岡"],["T-FACE豊田",35.087593,137.155624,"https://selfcafe.jp/shop/aichi/toyota/","愛知県豊田市若宮町１－５７－１Ｔ－ＦＡＣＥ６階"],["ささしまライブ",35.16172,136.882553,"https://selfcafe.jp/shop/aichi/sasashima/","愛知県名古屋市中村区平池町４－６０－１４マーケットスクエアささしま１階"],["クラスポ蒲郡",34.811646,137.195023,"https://selfcafe.jp/shop/aichi/gamagori/","愛知県蒲郡市鹿島町浅井新田１－２６"],["ナディアパーク栄",35.165794,136.904938,"https://selfcafe.jp/shop/aichi/nadyaparksakae/","愛知県名古屋市中区栄３－１８－１ナディアパーククレアーレ内１階"],["ルビットタウン刈谷",35.002117,136.998566,"https://selfcafe.jp/shop/aichi/luvittown-kariya/","愛知県刈谷市高倉町２－６０１ルビットタウン刈谷１階"],["中村日赤",35.170979,136.866837,"https://selfcafe.jp/shop/aichi/nakamuranisseki/","愛知県名古屋市中村区寿町１０"],["中村日赤鳥居通",35.170956,136.859543,"https://selfcafe.jp/shop/aichi/toriidori/","愛知県名古屋市中村区鳥居通４－１６"],["丸の内",35.171684,136.900604,"https://selfcafe.jp/shop/aichi/marunouchi/","愛知県名古屋市中区錦２－６－１５ＮＨＮＩＳＨＩＫＩ３階"],["亀島",35.177708,136.872711,"https://selfcafe.jp/shop/aichi/kamejima/","愛知県名古屋市中村区佐古前町２２－１３森ビル１階"],["六番町",35.121223,136.888214,"https://selfcafe.jp/shop/aichi/rokubancho/","愛知県名古屋市熱田区六番２－８－３２"],["千種",35.169899,136.929626,"https://selfcafe.jp/shop/aichi/chikusa/","愛知県名古屋市東区葵３－２５－１５シティファミール千種"],["原",35.126011,136.995361,"https://selfcafe.jp/shop/aichi/hara/","愛知県名古屋市天白区原１－２０７原駅前ビル１階"],["太閤通駅",35.167114,136.872177,"https://selfcafe.jp/shop/aichi/taikodorieki/","愛知県名古屋市中村区黄金通１－２９"],["安城駅",34.959995,137.086914,"https://selfcafe.jp/shop/aichi/anjoeki/","愛知県安城市御幸本町１－１"],["布袋駅",35.31786,136.872589,"https://selfcafe.jp/shop/aichi/hoteieki/","愛知県江南市布袋町西布２１８ＭＯＫＵＫＩＣＨＩ１０区画"],["常滑",34.889641,136.835358,"https://selfcafe.jp/shop/aichi/tokoname/","愛知県常滑市鯉江本町５－１４０ミュープラット常滑"],["幸田",34.887058,137.162903,"https://selfcafe.jp/shop/aichi/kota/","愛知県額田郡幸田町相見沖原１"],["御器所",35.147488,136.933273,"https://selfcafe.jp/shop/aichi/gokiso/","愛知県名古屋市昭和区阿由知通４－１８－１トーカンマンション御器所"],["新守山",35.204765,136.948975,"https://selfcafe.jp/shop/aichi/shinmoriyama/","愛知県名古屋市守山区新守山２８３０アピタパワー新守山２階"],["新瑞橋",35.117249,136.936432,"https://selfcafe.jp/shop/aichi/aratamabashi/","愛知県名古屋市瑞穂区瑞穂通８－１３－３"],["日比野",35.135857,136.893005,"https://selfcafe.jp/shop/aichi/hibino/","愛知県名古屋市熱田区千代田町１３－４三木ビル１階"],["星ヶ丘",35.161858,136.983032,"https://selfcafe.jp/shop/aichi/hoshigaoka/","愛知県名古屋市千種区井上町５０－１ＣＯＺＹＰＬＡＣＥ星ヶ丘１階"],["本陣",35.175903,136.866028,"https://selfcafe.jp/shop/aichi/honjin/","愛知県名古屋市中村区鳥居通２－１０"],["栄",35.170097,136.90657,"https://selfcafe.jp/shop/aichi/sakae/","愛知県名古屋市中区錦３－１７－１５ドン・キホーテ栄本店６階"],["栄生",35.184032,136.873901,"https://selfcafe.jp/shop/aichi/sako/","愛知県名古屋市西区栄生２－４－５"],["桜山",35.140938,136.930359,"https://selfcafe.jp/shop/aichi/sakurayama/","愛知県名古屋市昭和区広見町５－５６－６プチメゾン桜山"],["池下",35.167633,136.945343,"https://selfcafe.jp/shop/aichi/ikeshita/","愛知県名古屋市千種区池下１－１１－１１第４６プロスパー池下２階"],["瀬戸岩屋堂",35.239231,137.156616,"https://selfcafe.jp/shop/aichi/setoiwayado/","愛知県瀬戸市岩屋町８１"],["神沢",35.098301,136.98941,"https://selfcafe.jp/shop/aichi/kamisawa/","愛知県名古屋市緑区神沢１－２０５"],["緑鴻仏目",35.080513,136.978073,"https://selfcafe.jp/shop/aichi/midorikoubutsume/","愛知県名古屋市緑区鴻仏目１－１０２ベルインビルＢ棟"],["藤が丘",35.182354,137.019913,"https://selfcafe.jp/shop/aichi/fujigaoka/","愛知県名古屋市名東区明が丘１２５藤が丘コーポラス１階"],["赤塚",35.183552,136.924377,"https://selfcafe.jp/shop/aichi/akatsuka/","愛知県名古屋市東区山口町１－２４エノキドビル１階・２階"],["野並",35.10173,136.955811,"https://selfcafe.jp/shop/aichi/nonami/","愛知県名古屋市天白区野並３－４０１アサノビル２階"],["高畑",35.143929,136.852829,"https://selfcafe.jp/shop/aichi/takabata/","愛知県名古屋市中川区高畑５－１５６－１"],["鳴海山下",35.093269,136.949295,"https://selfcafe.jp/shop/aichi/narumiyamashita/","愛知県名古屋市緑区鳴海町山下７８－１コナミスポーツクラブ鳴海山下内"],["鶴舞",35.156414,136.911194,"https://selfcafe.jp/shop/aichi/tsurumai/","愛知県名古屋市中区千代田３－３－３ＴＫ１ｓｔビル"],["名駅西口",35.170887,136.879517,"https://selfcafe.jp/shop/aichi/meiekinishiguchi/","愛知県名古屋市中村区椿町６－２三共ビル１階"],["長久手",35.173565,137.037491,"https://selfcafe.jp/shop/aichi/nagakute/","愛知県長久手市戸田９０１－１アピタ長久手２階フードコート内"],["千歳烏山",35.669674,139.600525,"https://selfcafe.jp/shop/tokyo/chitosekarasuyama/","東京都世田谷区南烏山６－３－１４池田ビル３階"],["大塚駅南口",35.731083,139.729507,"https://selfcafe.jp/shop/tokyo/otsukaminamiguchi/","東京都豊島区南大塚２－４６－３大塚グリーンビル６階"],["巣鴨駅南口",35.732693,139.739151,"https://selfcafe.jp/shop/tokyo/sugamominamiguchi/","東京都豊島区巣鴨１－１７－８ｎＺ１１７８ビル２階"],["新宿西口Shinjuku Future Gallery",35.692627,139.698029,"https://selfcafe.jp/shop/tokyo/shinjukunishiguchi/","東京都新宿区西新宿１－５－１１新宿三葉ビル１階"],["早稲田",35.70612,139.720352,"https://selfcafe.jp/shop/tokyo/waseda/","東京都新宿区馬場下町６１－６高橋ビル４階"],["梅島",35.772583,139.79747,"https://selfcafe.jp/shop/tokyo/umejima/","東京都足立区梅田８－３－９石井サニービル４階"],["渋谷神南",35.662666,139.699677,"https://selfcafe.jp/shop/tokyo/shibuyajinnan/","東京都渋谷区神南１－１９－１４クリスタルポイント地下２階"],["イオンタウン彦根",35.271404,136.26799,"https://selfcafe.jp/shop/shiga/aeontownhikone/","滋賀県彦根市古沢町２５５－１イオンタウン彦根内"],["浜松新橋",34.679379,137.711365,"https://selfcafe.jp/shop/shizuoak/hamamatsu/","静岡県浜松市中央区新橋町１４００－１イオンタウン浜松新橋"],["鳥取駅前",35.494823,134.227798,"https://selfcafe.jp/shop/tottori/tottoriekimae/","鳥取県鳥取市永楽温泉町１６０日交駅前ビル１階"]];
+  var q = new URLSearchParams(location.search);
+  var $ = function (k) { return document.querySelector('[data-k="' + k + '"]'); };
+  var listEl = $("list"), stampEl = $("stamp"), btn = $("reload");
+  var nearEl = $("near"), nearMsg = $("nearmsg"), geoBtn = $("geo");
+  if (q.has("notitle")) $("head").style.display = "none";
+  if (q.get("api")) API = q.get("api");
+  var only = q.get("store") || "";
+  var isDemo = q.has("demo") || !API;
+  $("demo").hidden = !isDemo;
+  if (window.self !== window.top) {
+    document.body.classList.add("in-frame");
+    var postH = function () { try { window.parent.postMessage({ type: "scf-height", h: Math.ceil(document.body.getBoundingClientRect().height) }, "*"); } catch (e) {} };
+    if (window.ResizeObserver) new ResizeObserver(postH).observe(document.body); else setInterval(postH, 1000);
+    window.addEventListener("load", postH);
+  }
+  $("legend").innerHTML = LEVELS.map(function (l, i) { return '<li><i style="background:' + COLORS[i] + '"></i>' + l + '</li>'; }).join("");
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var hm = function (t) { return Number(t.slice(11, 13)) + ":" + t.slice(14, 16); };
+  var md = function (t) { return Number(t.slice(5, 7)) + "/" + Number(t.slice(8, 10)); };
+  var norm = function (s) { return String(s || "").normalize("NFKC").replace(/\s+/g, "").toLowerCase(); };
+  function card(s, today, opt) {
+    opt = opt || {};
+    var i = LEVELS.indexOf(s.level);
+    var hours = String(s.hours || "").replace("-", "〜");
+    var cls = "card", badge, color = "", when;
+    if (s.state === "ok" && i >= 0) {
+      badge = s.level; color = COLORS[i];
+      when = '<span><b>' + (s.time.slice(0, 10) === today ? "" : md(s.time) + " ") + hm(s.time) + '</b> 時点</span>';
+    } else if (s.state === "off") {
+      cls += " off"; badge = "判定の時間外";
+      when = '<span>' + (hours ? "判定は " + esc(hours) + " です" : "判定の時間外です") + '</span>';
+    } else if (s.state === "none") {
+      cls += " none"; badge = "表示の準備中";
+      when = '<span>この店の混み具合は、まだ表示していません</span>';
+    } else {
+      cls += " stale"; badge = "表示を休止中";
+      when = '<span>ただいま混み具合を表示できません</span>';
+    }
+    if (opt.url) when += '<a href="' + esc(opt.url) + '" target="_blank" rel="noopener">店舗ページ</a>';
+    var gauge = color ? '<div class="gauge" aria-hidden="true">' + LEVELS.map(function (_, k) {
+      return '<i' + (k <= i ? ' style="background:' + color + '"' : "") + '></i>'; }).join("") + '</div>' : "";
+    var dist = opt.dist == null ? "" : '<span class="dist">' + (opt.dist < 0.95 ? "約" + Math.max(100, Math.round(opt.dist * 10) * 100) + "m" : "約" + opt.dist.toFixed(1) + "km") + '</span>';
+    return '<li class="' + cls + '"><h3 class="name">' + esc(s.name) + '<small>店</small>' + dist + '</h3>' +
+      '<div class="lv"><span class="badge"' + (color ? ' style="background:' + color + '"' : "") + '>' + esc(badge) + '</span>' + gauge + '</div>' +
+      '<p class="when">' + when + '</p></li>';
+  }
+  function jstNow() {
+    var d = new Date(Date.now() + 9 * 3600e3), p = function (n) { return ("0" + n).slice(-2); };
+    return d.getUTCFullYear() + "-" + p(d.getUTCMonth() + 1) + "-" + p(d.getUTCDate()) + " " + p(d.getUTCHours()) + ":" + p(d.getUTCMinutes());
+  }
+  function stateOf(s, now) {
+    var age = (Date.parse(now.replace(" ", "T") + ":00+09:00") - Date.parse(String(s.time).replace(" ", "T") + ":00+09:00")) / 60000;
+    if (!(age <= STALE_MIN)) {
+      var h = String(s.hours || "").split("-"), hhmm = now.slice(11);
+      return h.length === 2 && (hhmm < h[0] || hhmm > h[1]) && age < 24 * 60 ? "off" : "stale";
+    }
+    return "ok";
+  }
+  var last = null;
+  var center = null;
+  function render(data) {
+    var now = jstNow();
+    (data.stores || []).forEach(function (s) { if (!s.state) s.state = stateOf(s, now); });
+    last = data;
+    var stores = (data.stores || []).filter(function (s) { return !only || s.name.indexOf(only) >= 0; }).slice();
+    stores.sort(function (a, b) { return a.name.localeCompare(b.name, "ja"); });
+    var today = now.slice(0, 10);
+    listEl.innerHTML = stores.length ? stores.map(function (s) { return card(s, today); }).join("")
+      : '<li class="msg">' + (only ? "「" + esc(only) + "」の混雑状況はまだありません。" : "混雑状況を表示できる店舗はまだありません。") + '</li>';
+    stampEl.textContent = hm(now) + " 更新（自動で更新します）";
+    if (center) renderNear();
+  }
+  function km(a, b, c, d) {
+    var r = Math.PI / 180, x = Math.sin((c - a) * r / 2), y = Math.sin((d - b) * r / 2);
+    return 12742 * Math.asin(Math.sqrt(x * x + Math.cos(a * r) * Math.cos(c * r) * y * y));
+  }
+  function renderNear() {
+    var now = jstNow(), today = now.slice(0, 10);
+    var crowd = {};
+    ((last && last.stores) || []).forEach(function (s) { crowd[norm(s.name)] = s; });
+    var near = STORES.map(function (x) { return { x: x, d: km(center.lat, center.lng, x[1], x[2]) }; })
+      .sort(function (a, b) { return a.d - b.d; }).slice(0, NEAR_N);
+    nearEl.innerHTML = near.map(function (n) {
+      var s = crowd[norm(n.x[0])] || { name: n.x[0], state: "none" };
+      return card(s, today, { dist: n.d, url: n.x[3] });
+    }).join("");
+  }
+  function setCenter(lat, lng, label) {
+    center = { lat: lat, lng: lng };
+    nearMsg.textContent = label;
+    renderNear();
+  }
+  geoBtn.addEventListener("click", function () {
+    var fail = function () {
+      geoBtn.disabled = false;
+      nearMsg.innerHTML = "現在地を使えませんでした。店名・地名で探してください。" +
+        (isDemo ? ' <button type="button" class="btn sub" data-k="demogeo">見本：名古屋駅にいるとして探す</button>' : "");
+      var b = $("demogeo");
+      if (b) b.addEventListener("click", function () { setCenter(35.170915, 136.881537, "名古屋駅（見本）から近い順"); });
+    };
+    if (!navigator.geolocation) { fail(); return; }
+    geoBtn.disabled = true;
+    nearMsg.textContent = "現在地を確認しています…";
+    navigator.geolocation.getCurrentPosition(function (p) {
+      geoBtn.disabled = false;
+      setCenter(p.coords.latitude, p.coords.longitude, "現在地から近い順");
+    }, fail, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+  });
+  $("find").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var w = norm($("q").value);
+    if (!w) { nearMsg.textContent = "店名か地名を入れてください。"; return; }
+    var hit = STORES.filter(function (x) { return norm(x[0]).indexOf(w) >= 0; });
+    if (!hit.length) hit = STORES.filter(function (x) { return norm(x[4]).indexOf(w) >= 0; });
+    if (!hit.length) { nearEl.innerHTML = ""; nearMsg.textContent = "「" + $("q").value + "」に合う店が見つかりませんでした。別の言葉で探してください。"; return; }
+    var lat = 0, lng = 0;
+    hit.forEach(function (x) { lat += x[1]; lng += x[2]; });
+    setCenter(lat / hit.length, lng / hit.length, "「" + $("q").value + "」から近い順");
+  });
+  function demo() {
+    var t = jstNow();
+    return { ok: true, now: t, stores: [
+      { name: "名駅西口", level: "やや混雑", time: t, state: "ok", hours: "11:00-19:00" },
+      { name: "太閤通駅", level: "空いています", time: t, state: "ok", hours: "11:00-19:00" },
+      { name: "本陣", level: "混雑", time: t, state: "ok", hours: "11:00-19:00" },
+      { name: "中村日赤", level: "やや空いています", time: t, state: "ok", hours: "11:00-19:00" },
+      { name: "丸の内", level: "ほぼ満席", time: t, state: "ok", hours: "11:00-19:00" },
+      { name: "栄", level: "", time: t, state: "off", hours: "11:00-19:00" },
+      { name: "千種", level: "", time: t, state: "stale", hours: "11:00-19:00" }] };
+  }
+  function load() {
+    btn.disabled = true;
+    if (isDemo) { render(demo()); btn.disabled = false; return; }
+    fetch(API, { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (data) {
+      if (!data || !data.ok) throw new Error((data && data.error) || "読み込めませんでした");
+      render(data);
+    }).catch(function () {
+      if (!listEl.children.length) listEl.innerHTML = '<li class="msg">混雑状況を読み込めませんでした。少し時間をおいて「最新にする」を押してください。</li>';
+      stampEl.textContent = "読み込みに失敗しました";
+    }).then(function () { btn.disabled = false; });
+  }
+  btn.addEventListener("click", load);
+  load();
+  setInterval(function () { if (!document.hidden) load(); }, REFRESH_MS);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>
