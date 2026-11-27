@@ -42,10 +42,22 @@ body.in-frame{background:transparent}
 .near-msg:empty{display:none}
 .list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0;padding:0;list-style:none}
 .list:empty{display:none}
-.pref{grid-column:1/-1;list-style:none;margin:6px 0 -2px;font-size:13px;font-weight:700;color:var(--muted,#5b6574);letter-spacing:.04em}
-.pref:first-child{margin-top:0}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;display:grid;gap:8px;align-content:start;min-width:0}
-.name{margin:0;font-size:16px;font-weight:700;color:var(--g2);line-height:1.4;overflow-wrap:anywhere}
+.pref{grid-column:1/-1;list-style:none;margin:0}
+.pref button{appearance:none;width:100%;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;
+  cursor:pointer;font:inherit;font-size:15px;font-weight:700;color:var(--g2);text-align:left}
+.pref button:hover{border-color:var(--g)}
+.pref button:focus-visible,.fav:focus-visible{outline:2px solid var(--lime);outline-offset:1px}
+.pref small{font-size:12px;font-weight:400;color:var(--muted)}
+.pref .dots{display:flex;flex-wrap:wrap;gap:3px;margin-left:auto;justify-content:flex-end;max-width:55%}
+.pref .dots i{width:10px;height:10px;border-radius:50%;background:#e6e4dc;flex:none}
+.pref .chev{flex:none;color:var(--g);transition:transform .2s}
+.pref button[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.hint{margin:-4px 0 10px;font-size:12px;color:var(--muted)}
+.card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;display:grid;gap:8px;align-content:start;min-width:0}
+.card[hidden]{display:none}
+.fav{position:absolute;top:4px;right:4px;appearance:none;border:0;background:none;padding:6px 8px;font-size:20px;line-height:1;cursor:pointer;color:#cfccc0}
+.fav[aria-pressed="true"]{color:#e0a000}
+.name{margin:0;padding-right:30px;font-size:16px;font-weight:700;color:var(--g2);line-height:1.4;overflow-wrap:anywhere}
 .name small{font-size:12px;font-weight:400;color:var(--muted);margin-left:2px}
 .dist{display:block;font-family:"Jost","Noto Sans JP",sans-serif;font-size:13px;font-weight:600;color:var(--sub)}
 .gauge{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
@@ -80,6 +92,10 @@ body.in-frame{background:transparent}
   </header>
   <p class="demo" data-k="demo" hidden>見本のデータで表示しています（実際の混み具合ではありません）。</p>
   <div data-k="guide" aria-live="polite"></div>
+  <section class="sec" aria-labelledby="fav-h" data-k="favsec" hidden>
+    <h2 id="fav-h">よく行く店</h2>
+    <ul class="list" data-k="fav" aria-live="polite"></ul>
+  </section>
   <section class="sec" aria-labelledby="near-h">
     <h2 id="near-h">近くの店の混み具合</h2>
     <div class="near">
@@ -94,6 +110,7 @@ body.in-frame{background:transparent}
   <section class="sec" aria-labelledby="all-h">
     <h2 id="all-h">混み具合を表示している店</h2>
     <div class="bar"><span data-k="stamp">読み込み中…</span><button type="button" class="btn" data-k="reload"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>最新にする</button></div>
+    <p class="hint" data-k="hint">都道府県を押すと開きます。店の★を押すと「よく行く店」として、いちばん上に固定できます。</p>
     <ul class="list" data-k="list" aria-live="polite"></ul>
   </section>
   <ul class="legend" data-k="legend" aria-label="段階の見かた"></ul>
@@ -153,7 +170,10 @@ body.in-frame{background:transparent}
     var gauge = '<div class="gauge" role="img" aria-label="' + esc(label) + '">' + LEVELS.map(function (_, k) {
       return '<i' + (color && k <= i ? ' style="background:' + color + '"' : "") + '></i>'; }).join("") + '</div>';
     var dist = opt.dist == null ? "" : '<span class="dist">' + (opt.dist < 0.95 ? "約" + Math.max(100, Math.round(opt.dist * 10) * 100) + "m" : "約" + opt.dist.toFixed(1) + "km") + '</span>';
-    return '<li class="' + cls + '"><h3 class="name">' + esc(s.name) + '<small>店</small>' + dist + '</h3>' +
+    var on = isFav(s.name);
+    var fav = '<button type="button" class="fav" data-fav="' + esc(s.name) + '" aria-pressed="' + on + '" aria-label="' + esc(s.name) + '店を「よく行く店」' +
+      (on ? "から外す" : "に入れる") + '" title="よく行く店' + (on ? "から外す" : "に入れる") + '">★</button>';
+    return '<li class="' + cls + '">' + fav + '<h3 class="name">' + esc(s.name) + '<small>店</small>' + dist + '</h3>' +
       gauge + state + (when ? '<p class="when">' + when + '</p>' : "") + '</li>';
   }
   function jstNow() {
@@ -173,6 +193,19 @@ body.in-frame{background:transparent}
     var n = norm(name), x = STORES.filter(function (v) { return norm(v[0]) === n; })[0], a = x ? String(x[4]) : "";
     return PREFS.filter(function (p) { return a.indexOf(p) === 0; })[0] || "";
   }
+  var mem = {};
+  function recall(key, def) {
+    try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return key in mem ? mem[key] : def; }
+  }
+  function keep(key, v) { mem[key] = v; try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+  var FAV_KEY = "scf-crowd-fav", OPEN_KEY = "scf-crowd-open";
+  var OPEN_ALL_MAX = 10;
+  function favs() { var v = recall(FAV_KEY, []); return Array.isArray(v) ? v : []; }
+  function isFav(name) { var n = norm(name); return favs().some(function (x) { return norm(x) === n; }); }
+  function toggleFav(name) {
+    var n = norm(name), now = favs();
+    keep(FAV_KEY, now.some(function (x) { return norm(x) === n; }) ? now.filter(function (x) { return norm(x) !== n; }) : now.concat([name]));
+  }
   var last = null;
   var center = null;
   function render(data) {
@@ -184,16 +217,52 @@ body.in-frame{background:transparent}
     var pi = function (s) { var i = PREFS.indexOf(s.pref); return i < 0 ? 99 : i; };
     stores.sort(function (a, b) { return pi(a) - pi(b) || a.name.localeCompare(b.name, "ja"); });
     var today = now.slice(0, 10), prev = null;
+    var groups = {};
+    stores.forEach(function (s) { (groups[s.pref] = groups[s.pref] || []).push(s); });
+    var saved = recall(OPEN_KEY, {}) || {};
+    var isOpen = function (p) { return !p || only ? true : (p in saved ? !!saved[p] : stores.length <= OPEN_ALL_MAX); };
+    $("hint").hidden = !stores.length || !!only;
     listEl.innerHTML = stores.length ? stores.map(function (s) {
-      var head = s.pref && s.pref !== prev ? '<li class="pref">' + esc(s.pref) + '</li>' : "";
+      var open = isOpen(s.pref), head = "";
+      if (s.pref && s.pref !== prev && !only) {
+        var g = groups[s.pref];
+        head = '<li class="pref"><button type="button" data-pref="' + esc(s.pref) + '" aria-expanded="' + open + '">' + esc(s.pref) +
+          '<small>' + g.length + '店</small><span class="dots" aria-hidden="true">' + g.map(function (x) {
+            var i = LEVELS.indexOf(x.level);
+            return '<i' + (x.state === "ok" && i >= 0 ? ' style="background:' + COLORS[i] + '"' : "") + '></i>'; }).join("") +
+          '</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></li>';
+      }
       prev = s.pref;
-      return head + card(s, today);
+      return head + (open ? card(s, today) : card(s, today).replace(/^<li /, "<li hidden "));
     }).join("")
       : '<li class="msg">' + (only ? "「" + esc(only) + "」の混雑状況はまだありません。" : "混雑状況を表示できる店舗はまだありません。") + '</li>';
     stampEl.textContent = hm(now) + " 更新（自動で更新します）";
     renderGuide(data, today);
+    renderFav(today);
     if (center) renderNear();
   }
+  function renderFav(today) {
+    var crowd = {}, names = favs();
+    ((last && last.stores) || []).forEach(function (s) { crowd[norm(s.name)] = s; });
+    $("favsec").hidden = !names.length || !!only;
+    $("fav").innerHTML = names.map(function (name) {
+      var n = norm(name), x = STORES.filter(function (v) { return norm(v[0]) === n; })[0];
+      return card(crowd[n] || { name: name, state: "none" }, today, { url: x ? x[3] : "" });
+    }).join("");
+  }
+  document.addEventListener("click", function (e) {
+    var f = e.target.closest && e.target.closest("[data-fav]");
+    if (f) { toggleFav(f.getAttribute("data-fav")); if (last) render(last); return; }
+    var p = e.target.closest && e.target.closest("[data-pref]");
+    if (p) {
+      var saved = recall(OPEN_KEY, {}) || {};
+      saved[p.getAttribute("data-pref")] = p.getAttribute("aria-expanded") !== "true";
+      keep(OPEN_KEY, saved);
+      if (last) render(last);
+      var again = listEl.querySelector('[data-pref="' + p.getAttribute("data-pref") + '"]');
+      if (again) again.focus();
+    }
+  });
   function renderGuide(data, today) {
     var by = {}, out = [], from = LEVELS.indexOf(data.guideFrom || "やや混雑");
     (data.stores || []).forEach(function (s) { by[s.name] = s; });
