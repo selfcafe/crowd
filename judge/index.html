@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>混雑判定の合否</title>
+<style>
+:root{--g:#22703d;--g2:#30693e;--lime:#92af0c;--ink:#101010;--sub:#393939;--muted:#6b6b6b;--line:rgba(34,112,61,.28);--bg:#f7f6f1;--card:#fff;
+  --lv0:#2e8b57;--lv1:#7fae1f;--lv2:#e0a000;--lv3:#e06a1b;--lv4:#c8322d}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;line-height:1.6;-webkit-text-size-adjust:100%}
+.wrap{max-width:860px;margin:0 auto;padding:14px 12px 40px}
+h1{margin:0;font-size:18px;font-weight:900;color:var(--g2)}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:2px dashed var(--g)}
+.left{font-size:13px;color:var(--muted);white-space:nowrap}
+.store{margin:14px 0 2px;font-size:22px;font-weight:900;color:var(--g2)}
+.store small{font-size:13px;font-weight:400;color:var(--muted);margin-left:8px}
+.ai{margin:0 0 10px;font-size:14px;color:var(--sub)}
+.ai b{font-size:16px}
+.photos{display:grid;gap:8px}
+.photos figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.photos img{display:block;width:100%;height:auto}
+.photos figcaption{padding:4px 10px;font-size:12px;color:var(--muted)}
+.photos .none{padding:24px 10px;text-align:center;color:var(--muted);font-size:13px}
+.ask{margin:16px 0 8px;font-size:15px;font-weight:700}
+.btns{display:grid;gap:8px}
+.btns button{appearance:none;border:0;border-radius:10px;padding:14px 12px;font:inherit;font-size:16px;font-weight:700;color:#fff;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left}
+.btns button small{font-size:12px;font-weight:400;opacity:.95;white-space:nowrap}
+.btns button.same{outline:3px solid var(--ink);outline-offset:2px}
+.btns button:disabled{opacity:.5;cursor:wait}
+.btns button:focus-visible,.sub button:focus-visible{outline:3px solid var(--lime);outline-offset:2px}
+.sub{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.sub button{appearance:none;border:1px solid var(--line);border-radius:10px;padding:11px 8px;font:inherit;font-size:14px;background:var(--card);color:var(--sub);cursor:pointer}
+.msg{margin:28px 0;padding:22px 16px;background:var(--card);border:1px solid var(--line);border-radius:10px;text-align:center;font-size:15px}
+.err{color:#9b2c3c;font-size:13px;margin:8px 0 0}
+.help{margin:18px 0 0;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>混雑判定の合否</h1><span class="left" id="left"></span></div>
+  <div id="main"><p class="msg">読み込み中…</p></div>
+  <p class="err" id="err" role="alert"></p>
+  <p class="help">写真を見て、店内の混み具合にいちばん近い段階を押してください。枠で囲んである段階が AI の判定です（合っていれば、そのまま押します）。席の埋まり具合の目安：3割より少ない＝空いています／半分より少ない＝やや空いています／7割より少ない＝やや混雑／8割5分より少ない＝混雑／それ以上＝ほぼ満席。</p>
+</div>
+<script>
+(function () {
+  var LEVELS = ["空いています", "やや空いています", "やや混雑", "混雑", "ほぼ満席"];
+  var HINT = ["席の3割より少ない", "半分より少ない", "7割より少ない", "8割5分より少ない", "それ以上"];
+  var COLORS = ["var(--lv0)", "var(--lv1)", "var(--lv2)", "var(--lv3)", "var(--lv4)"];
+  var SKIP = "写真では分からない";
+  var API = "https://script.google.com/macros/s/AKfycbzNd2q19gPE3xqu3EIPdTs4LlR3r-dkSKF6RkSW7OUAwLnCNIEVDmi7Gaqo3QeHZPwIcQ/exec";
+  var KEY = decodeURIComponent(location.hash.replace(/^#/, "").replace(/^k=/, ""));
+  var skipped = [], cur = null;
+  var main = document.getElementById("main"), left = document.getElementById("left"), err = document.getElementById("err");
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+
+  function show(res) {
+    err.textContent = "";
+    left.textContent = "残り " + res.left + " 件";
+    cur = res.item;
+    if (!cur) {
+      main.innerHTML = '<p class="msg">' + (res.left ? "「あとで」にした " + res.left + " 件が残っています。ページを開き直すと、もう一度出ます。" : "合否を付ける写真は、今はありません。お疲れさまでした。") + '</p>';
+      return;
+    }
+    var t = String(cur.time), when = Number(t.slice(5, 7)) + "/" + Number(t.slice(8, 10)) + " " + Number(t.slice(11, 13)) + ":" + t.slice(14, 16);
+    main.innerHTML =
+      '<h2 class="store">' + esc(cur.store) + '店<small>' + esc(when) + ' の写真</small></h2>' +
+      '<p class="ai">AI の判定：<b>' + esc(cur.ai) + '</b>（使用中 ' + esc(cur.used) + ' ／ ' + esc(cur.seats) + '席）</p>' +
+      '<div class="photos">' + cur.photos.map(function (p) {
+        return '<figure>' + (p.src ? '<img src="' + p.src + '" alt="' + esc(p.label) + ' の写真">' : '<p class="none">この写真は読めませんでした</p>') +
+          '<figcaption>' + esc(p.label) + '</figcaption></figure>'; }).join("") + '</div>' +
+      '<p class="ask">正しい段階はどれですか？</p>' +
+      '<div class="btns">' + LEVELS.map(function (l, i) {
+        return '<button type="button" data-lv="' + esc(l) + '" style="background:' + COLORS[i] + '"' + (l === cur.ai ? ' class="same"' : "") + '>' +
+          esc(l) + (l === cur.ai ? "（AI と同じ）" : "") + '<small>' + HINT[i] + '</small></button>'; }).join("") + '</div>' +
+      '<div class="sub"><button type="button" data-lv="' + SKIP + '">写真では分からない</button><button type="button" data-later="1">あとで</button></div>';
+    window.scrollTo(0, 0);
+  }
+
+  function busy(on) { Array.prototype.forEach.call(main.querySelectorAll("button"), function (b) { b.disabled = on; }); }
+  function fail(e) {
+    if (!cur && !main.querySelector("button")) { main.innerHTML = '<p class="msg">このページは開けません。URL を確かめてください。</p>'; return; }
+    busy(false); err.textContent = "うまくいきませんでした。もう一度押してください。（" + (e && e.message ? e.message : e) + "）";
+  }
+  function call(q) {
+    return fetch(API + "?k=" + encodeURIComponent(KEY) + "&" + q + "&t=" + Date.now(), { credentials: "omit", referrerPolicy: "no-referrer" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d && d.error) throw new Error(d.error); return d; });
+  }
+  function next() { call("api=next&skip=" + encodeURIComponent(skipped.join(","))).then(show).catch(fail); }
+
+  main.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button") : null;
+    if (!b || !cur) return;
+    busy(true);
+    if (b.getAttribute("data-later")) { skipped.push(cur.id); next(); return; }
+    call("api=answer&id=" + encodeURIComponent(cur.id) + "&level=" + encodeURIComponent(b.getAttribute("data-lv"))).then(next).catch(fail);
+  });
+  if (!KEY) { main.innerHTML = '<p class="msg">このページは開けません。URL を確かめてください。</p>'; return; }
+  next();
+})();
+</script>
+</body>
+</html>
